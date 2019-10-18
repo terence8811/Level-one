@@ -1,4 +1,5 @@
 ## Poject to use scikit learn to predict a classification problem using KNeighbors and LogisticRegression
+leaned how to use train test split
 from IPython.display import IFrame
 IFrame('http://archive.ics.uci.edu/ml/machine-learning-databases/iris/iris.data', width=300, height=200)
 

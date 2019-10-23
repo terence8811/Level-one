@@ -1,0 +1,198 @@
+# we learned how to deal with information in text
+# for Python 2: use print only as a function
+from __future__ import print_function
+# load the iris dataset as an example
+from sklearn.datasets import load_iris
+iris = load_iris()
+# store the feature matrix (X) and response vector (y)
+X = iris.data
+y = iris.target
+# check the shapes of X and y
+print(X.shape)
+print(y.shape)
+# examine the first 5 rows of the feature matrix (including the feature names)
+import pandas as pd
+pd.DataFrame(X, columns=iris.feature_names).head()
+# examine the response vector
+print(y)
+# import the class
+from sklearn.neighbors import KNeighborsClassifier
+
+# instantiate the model (with the default parameters)
+knn = KNeighborsClassifier()
+
+# fit the model with data (occurs in-place)
+knn.fit(X, y)
+# predict the response for a new observation
+knn.predict([[3, 5, 4, 2]])
+# example text for model training (SMS messages)
+simple_train = ['call you tonight', 'Call me a cab', 'please call me... PLEASE!']
+# import and instantiate CountVectorizer (with the default parameters)
+from sklearn.feature_extraction.text import CountVectorizer
+vect = CountVectorizer()
+# learn the 'vocabulary' of the training data (occurs in-place)
+vect.fit(simple_train)
+# examine the fitted vocabulary
+vect.get_feature_names()
+# transform training data into a 'document-term matrix'
+simple_train_dtm = vect.transform(simple_train)
+simple_train_dtm
+# convert sparse matrix to a dense matrix
+simple_train_dtm.toarray()
+# examine the vocabulary and document-term matrix together
+pd.DataFrame(simple_train_dtm.toarray(), columns=vect.get_feature_names())
+# check the type of the document-term matrix
+type(simple_train_dtm)
+
+# examine the sparse matrix contents
+print(simple_train_dtm)
+# example text for model testing
+simple_test = ["please don't call me"]
+
+# transform testing data into a document-term matrix (using existing vocabulary)
+simple_test_dtm = vect.transform(simple_test)
+simple_test_dtm.toarray()
+
+# examine the vocabulary and document-term matrix together
+pd.DataFrame(simple_test_dtm.toarray(), columns=vect.get_feature_names())
+
+# read file into pandas using a relative path
+path = 'data/sms.tsv'
+sms = pd.read_table(path, header=None, names=['label', 'message'])
+
+# examine the shape
+sms.shape
+
+# examine the first 10 rows
+sms.head(10)
+# examine the class distribution
+sms.label.value_counts()
+
+# convert label to a numerical variable
+sms['label_num'] = sms.label.map({'ham':0, 'spam':1})
+
+# check that the conversion worked
+sms.head(10)
+# how to define X and y (from the iris data) for use with a MODEL
+X = iris.data
+y = iris.target
+print(X.shape)
+print(y.shape)
+# how to define X and y (from the SMS data) for use with COUNTVECTORIZER
+X = sms.message
+y = sms.label_num
+print(X.shape)
+print(y.shape)
+
+# split X and y into training and testing sets
+from sklearn.cross_validation import train_test_split
+X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=1)
+print(X_train.shape)
+print(X_test.shape)
+print(y_train.shape)
+print(y_test.shape)
+# instantiate the vectorizer
+vect = CountVectorizer()
+# learn training data vocabulary, then use it to create a document-term matrix
+vect.fit(X_train)
+X_train_dtm = vect.transform(X_train)
+# equivalently: combine fit and transform into a single step
+X_train_dtm = vect.fit_transform(X_train)
+# examine the document-term matrix
+X_train_dtm
+# transform testing data (using fitted vocabulary) into a document-term matrix
+X_test_dtm = vect.transform(X_test)
+X_test_dtm
+
+# import and instantiate a Multinomial Naive Bayes model
+from sklearn.naive_bayes import MultinomialNB
+nb = MultinomialNB()
+# train the model using X_train_dtm (timing it with an IPython "magic command")
+%time nb.fit(X_train_dtm, y_train)
+# make class predictions for X_test_dtm
+y_pred_class = nb.predict(X_test_dtm)
+# calculate accuracy of class predictions
+from sklearn import metrics
+metrics.accuracy_score(y_test, y_pred_class)
+# print the confusion matrix
+metrics.confusion_matrix(y_test, y_pred_class)
+# print message text for the false positives (ham incorrectly classified as spam)
+# print message text for the false negatives (spam incorrectly classified as ham)
+# example false negative
+X_test[3132]
+# calculate predicted probabilities for X_test_dtm (poorly calibrated)
+y_pred_prob = nb.predict_proba(X_test_dtm)[:, 1]
+y_pred_prob
+# calculate AUC
+metrics.roc_auc_score(y_test, y_pred_prob)
+# import and instantiate a logistic regression model
+from sklearn.linear_model import LogisticRegression
+logreg = LogisticRegression()
+# train the model using X_train_dtm
+%time logreg.fit(X_train_dtm, y_train)
+# make class predictions for X_test_dtm
+y_pred_class = logreg.predict(X_test_dtm)
+
+# calculate predicted probabilities for X_test_dtm (well calibrated)
+y_pred_prob = logreg.predict_proba(X_test_dtm)[:, 1]
+y_pred_prob
+
+# calculate accuracy
+metrics.accuracy_score(y_test, y_pred_class)
+# calculate AUC
+metrics.roc_auc_score(y_test, y_pred_prob)
+# store the vocabulary of X_train
+X_train_tokens = vect.get_feature_names()
+len(X_train_tokens)
+# examine the first 50 tokens
+print(X_train_tokens[0:50])
+# examine the last 50 tokens
+print(X_train_tokens[-50:])
+# Naive Bayes counts the number of times each token appears in each class
+nb.feature_count_
+# rows represent classes, columns represent tokens
+nb.feature_count_.shape
+# number of times each token appears across all HAM messages
+ham_token_count = nb.feature_count_[0, :]
+ham_token_count
+# number of times each token appears across all SPAM messages
+spam_token_count = nb.feature_count_[1, :]
+spam_token_count
+# create a DataFrame of tokens with their separate ham and spam counts
+tokens = pd.DataFrame({'token':X_train_tokens, 'ham':ham_token_count, 'spam':spam_token_count}).set_index('token')
+tokens.head()
+# examine 5 random DataFrame rows
+tokens.sample(5, random_state=6)
+
+# Naive Bayes counts the number of observations in each class
+nb.class_count_
+# add 1 to ham and spam counts to avoid dividing by 0
+tokens['ham'] = tokens.ham + 1
+tokens['spam'] = tokens.spam + 1
+tokens.sample(5, random_state=6)
+
+# convert the ham and spam counts into frequencies
+tokens['ham'] = tokens.ham / nb.class_count_[0]
+tokens['spam'] = tokens.spam / nb.class_count_[1]
+tokens.sample(5, random_state=6)
+# calculate the ratio of spam-to-ham for each token
+tokens['spam_ratio'] = tokens.spam / tokens.ham
+tokens.sample(5, random_state=6)
+
+# examine the DataFrame sorted by spam_ratio
+# note: use sort() instead of sort_values() for pandas 0.16.2 and earlier
+tokens.sort_values('spam_ratio', ascending=False)
+
+# look up the spam_ratio for a given token
+tokens.loc['dating', 'spam_ratio']
+# show default parameters for CountVectorizer
+vect
+
+# remove English stop words
+vect = CountVectorizer(stop_words='english')
+# include 1-grams and 2-grams
+vect = CountVectorizer(ngram_range=(1, 2))
+# ignore terms that appear in more than 50% of the documents
+vect = CountVectorizer(max_df=0.5)
+# only keep terms that appear in at least 2 documents
+vect = CountVectorizer(min_df=2)

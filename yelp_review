@@ -1,0 +1,38 @@
+# my first assignment i speghetti some code together, made me learn about the sequentialness of the cells in jupyter notebook, how to
+fix some errors real quick, how to alter code to fit my project, didn't quiet understand responce that my machine was calculation, prob
+had to do with yelp stars and how to predict them in the future based by what people write in text
+
+import pandas as pd
+
+data = pd.read_csv('C:\\Users\\tddig\pycon-2016-tutorial-master\pycon-2016-tutorial-master\data\yelp.csv', index_col=0)
+
+data.head()
+data.shape
+data.stars.value_counts().sort_index()
+# cool thing taught me how to use both classes
+yelp_best_worst = data[(data.stars==5) | (data.stars==1)]
+yelp_best_worst.shape
+X = data.text
+y = data.stars
+from sklearn.model_selection  import train_test_split
+X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=1)
+print(X_train.shape)
+print(X_test.shape)
+print(y_train.shape)
+print(y_test.shape)
+from sklearn.feature_extraction.text import CountVectorizer
+vect = CountVectorizer()
+
+X_train_dtm = vect.fit_transform(X_train)
+X_test_dtm = vect.transform(X_test)
+from sklearn.naive_bayes import MultinomialNB
+nb = MultinomialNB()
+%time nb.fit(X_train_dtm, y_train)
+%time nb.fit(X_test_dtm, y_test)
+y_pred_class = nb.predict(X_test_dtm)
+
+y_pred_class
+from sklearn import metrics
+metrics.accuracy_score(y_test, y_pred_class)
+metrics.confusion_matrix(y_test, y_pred_class)
+y_test.value_counts().head(1) / len(y_test)
